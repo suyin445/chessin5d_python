@@ -47,7 +47,7 @@ class Chessin5d:
         self.position = [0,1]
         self.chosen = None
         self.available = {}
-        self.lxh_mode = False
+        self.reverse = False
         pygame.display.set_caption('冷筱华，我真的好喜欢你啊！为了你，我要写5dc AI！')
 
     def draw_window(self):
@@ -76,25 +76,25 @@ class Chessin5d:
                         if self.chessin5d.end_turn:
                             self.chessin5d.onemove([8,8,8,8,8,8,8,8])
                     elif event.key == pygame.K_w:
-                        if self.lxh_mode:
-                            self.position[1] += 1
-                        else:
+                        if self.reverse:
                             self.position[1] -= 1
+                        else:
+                            self.position[1] += 1
                     elif event.key == pygame.K_s:
-                        if self.lxh_mode:
-                            self.position[1] -= 1
-                        else:
+                        if self.reverse:
                             self.position[1] += 1
+                        else:
+                            self.position[1] -= 1
                     elif event.key == pygame.K_a:
-                        if self.lxh_mode:
-                            self.position[0] -= 1
-                        else:
+                        if self.reverse:
                             self.position[0] += 1
+                        else:
+                            self.position[0] -= 1
                     elif event.key == pygame.K_d:
-                        if self.lxh_mode:
-                            self.position[0] += 1
-                        else:
+                        if self.reverse:
                             self.position[0] -= 1
+                        else:
+                            self.position[0] += 1
                     self.boardlist = {}
 
             self.show_board()
