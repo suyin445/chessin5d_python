@@ -363,8 +363,10 @@ class State:
                         else:
                             bool_ = self.basic_chess_available(checkp[i])[1] == 0 and bool_
                     if bool_:
-                        action = [*chess_coordinate, *checkp[3]]
-                        return_list.append(checkp[3])
+                        temp = checkp[2][:]
+                        temp[2] += 1 - 2 * owner
+                        action = [*chess_coordinate, *temp]
+                        return_list.append(temp)
                         self.special_operation[1].append(action)
             # 普通走法
             # 2d情况
