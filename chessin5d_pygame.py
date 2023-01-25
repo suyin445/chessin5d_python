@@ -51,7 +51,7 @@ class Chessin5d:
         pygame.display.set_caption('冷筱华，我真的好喜欢你啊！为了你，我要写5dc AI！')
 
     def draw_window(self):
-        self.window.fill((200, 200, 200))
+        self.window.fill((246,173,198))
         if self.chessin5d.end_turn:
             self.window.blit(self.image['can_over'], (550, 20))
         else:
