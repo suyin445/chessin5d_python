@@ -72,7 +72,7 @@ class Chessin5d:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     self.mouse()
                 elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_SPACE or pygame.K_f:
+                    if event.key == pygame.K_SPACE or event.key == pygame.K_f:
                         if self.chessin5d.end_turn:
                             self.chessin5d.onemove([8,8,8,8,8,8,8,8])
                     elif event.key == pygame.K_w:
