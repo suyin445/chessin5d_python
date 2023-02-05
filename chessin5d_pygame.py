@@ -74,7 +74,7 @@ class Chessin5d:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE or event.key == pygame.K_f:
                         if self.chessin5d.end_turn:
-                            self.chessin5d.onemove([8,8,8,8,8,8,8,8])
+                            self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
                     elif event.key == pygame.K_w:
                         if self.reverse:
                             self.position[1] -= 1
@@ -137,7 +137,7 @@ class Chessin5d:
                     self.unchoose()
             elif chess_coordinate == 'over':
                 if self.chessin5d.end_turn:
-                    self.chessin5d.onemove([8, 8, 8, 8, 8, 8, 8, 8])
+                    self.chessin5d.onemove([0, -1, 0, 0, 0, 0, 0, 0])
             else:
                 self.handle(chess_coordinate)
 

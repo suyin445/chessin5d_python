@@ -13,6 +13,7 @@ default_notmove = [[0,0], [0,4], [0,7], [7,0], [7,4], [7,7],
                    [6,0], [6,1], [6,2], [6,3], [6,4], [6,5], [6,6], [6,7]]
 class State:
     def __init__(self, rule = 'Turn Zero', turn = 1, maxround = 1000):
+        self.boardsize = 0
         self.state = []
         self.history = []
         self.available_actions_dic = {}
@@ -30,6 +31,7 @@ class State:
         self.maxround = maxround
 
         if rule == 'Turn Zero':
+            self.boardsize = 8
             self.present = 1
             self.state = {0: [copy.deepcopy(default_chessboard), copy.deepcopy(default_chessboard)]}
             self.not_moved = {(0,0):copy.deepcopy(default_notmove), (0,1):copy.deepcopy(default_notmove)}
@@ -94,14 +96,9 @@ class State:
             board, chess = complete_coordinate[:2], complete_coordinate[2:]
         board = tuple(board)
         chess = list(chess)
-        dubug = True if complete_coordinate == [0,4,1,3] else False
         if board not in self.not_moved:
-            if dubug:
-                raise SyntaxError
             return False
         if chess not in self.not_moved[board]:
-            if dubug:
-                raise SyntaxError
             return False
         return True
 
@@ -132,9 +129,9 @@ class State:
             if next_coordinate[i+1] < 0:
                 return [False]
         for i in range(2):
-            if next_coordinate[i+2] > 7:
+            if next_coordinate[i+2] > self.boardsize - 1:
                 return [False]
-        if len(next_)>next_coordinate[1]:
+        if len(next_) > next_coordinate[1]:
             next_ = next_[next_coordinate[1]]
         else:
             return [False]
@@ -152,7 +149,7 @@ class State:
             return [True,x[1]]
 
     def attacked2d(self,position,owner):
-        #检查马攻击
+        # 检查马攻击
         knight = []
         for i in [[1,2],[1,-2],[-1,2],[-1,-2],[2,1],[2,-1],[-2,1],[-2,-1]]:
             temp1 = position[:]
@@ -166,9 +163,9 @@ class State:
                     knight_owner, chesstype = divmod(temp2[1] - 1, 6)
                     if knight_owner == (1-owner) and chesstype == 3:
                         return True
-        #检查直线攻击，因为王车易位才用这个函数，所以只检测竖线
+        # 检查直线攻击，因为王车易位才用这个函数，所以只检测竖线
         direction = 1 - (2 * owner)
-        for distance in range(7):
+        for distance in range(self.boardsize - 1):
             distance += 1
             temp3 = position[:]
             temp3[2] += distance * direction
@@ -185,7 +182,7 @@ class State:
             else:
                 break
         #检查斜线攻击
-        for distance in range(7):
+        for distance in range(self.boardsize - 1):
             distance += 1
             temp3 = position[:]
             temp3[2] += distance * direction
@@ -322,10 +319,10 @@ class State:
 
         elif chesstype == 5: # 兵 pawn
             promotion = False
-            if chess_coordinate[2] - 6 + 5 * owner == 0: # 升变
+            if chess_coordinate[2] - self.boardsize + 2 + (self.boardsize - 3) * owner == 0: # 升变
                 promotion = True
 
-            elif chess_coordinate[2] - 4 + 1 * owner == 0: #吃过路兵
+            elif chess_coordinate[1] > 1: #吃过路兵
                 checkp = []
                 for i in range(4):
                     checkp.append(copy.deepcopy(chess_coordinate))
@@ -457,7 +454,7 @@ class State:
         return False
 
     def onemove(self,action):
-        if action == [8,8,8,8,8,8,8,8]:
+        if action[1] < 0:
             if self.end_turn:
                 self.turn = 1 - self.turn
                 self.reset_aftermove()
