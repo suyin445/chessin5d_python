@@ -100,9 +100,12 @@ class Chessin5dUI:
                     self.mouse()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE or event.key == pygame.K_f:
-                        if self.chessin5d.end_turn and not self.board_change:
-                            self.history.append(copy.deepcopy(self.chessin5d))
-                            self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
+                        if self.diy:
+                            chesstype = 0
+                        else:
+                            if self.chessin5d.end_turn:
+                                self.history.append(copy.deepcopy(self.chessin5d))
+                                self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
 
                     elif event.key == pygame.K_w:
                         if self.reverse:
