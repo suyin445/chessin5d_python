@@ -255,13 +255,15 @@ class Chessin5dUI:
                                         self.chessin5d.not_moved[tuple(chess_coordinate[:2])].remove(chess_coordinate[2:])
 
                         elif mouse_botton[0]:
+                            checklist = [1,3,6,7,9,12]
                             if tuple(chess_coordinate[:2]) in self.chessin5d.not_moved:
-                                if chess_coordinate[2:] not in self.chessin5d.not_moved[tuple(chess_coordinate[:2])]:
+                                if chess_coordinate[2:] not in self.chessin5d.not_moved[tuple(chess_coordinate[:2])] and\
+                                    board[chess_coordinate[2]][chess_coordinate[3]] in checklist:
                                     self.history.append(copy.deepcopy(self.chessin5d))
                                     self.chessin5d.not_moved[tuple(chess_coordinate[:2])].append(chess_coordinate[2:])
 
                             else:
-                                if board is not None:
+                                if board is not None and board[chess_coordinate[2]][chess_coordinate[3]] in checklist:
                                     if board[chess_coordinate[2]][chess_coordinate[3]] != 0:
                                         self.history.append(copy.deepcopy(self.chessin5d))
                                         self.chessin5d.not_moved[tuple(chess_coordinate[:2])] = [chess_coordinate[2:]]
@@ -292,7 +294,6 @@ class Chessin5dUI:
 
                 elif chess_coordinate == 'diy':
                     self.diy = True
-                    self.history = []
 
                 elif chess_coordinate == 'not_move':
                     self.notmove = not self.notmove
