@@ -20,6 +20,8 @@ for i in IMAGE:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (50, 40))
     elif i == 'background':
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (1300, 800))
+    elif i == 'stalemate':
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (120, 60))
     else:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (25, 25))
 
@@ -49,6 +51,7 @@ class Chessin5dUI:
 
     def draw_window(self):
         self.window.blit(self.image['background'], (0, 0))
+        self.window.blit(self.image['stalemate'], (900, 20))
         if self.chessin5d.end:
             font = pygame.font.SysFont('FangSong', 40, bold=True)
             if self.chessin5d.winner == 2:
@@ -214,7 +217,7 @@ class Chessin5dUI:
                 if self.history:
                     self.chessin5d = self.history.pop()
                     self.boardlist = {}
-            elif chess_coordinate is None:
+            elif chess_coordinate in ['stalemate', None]:
                 return False
             else:
                 if self.board_change:
@@ -322,6 +325,9 @@ class Chessin5dUI:
                     if self.history:
                         self.chessin5d = self.history.pop()
                         self.boardlist = {}
+                elif chess_coordinate == 'stalemate':
+                    self.history.append(copy.deepcopy(self.chessin5d))
+                    self.chessin5d.onemove([0, -1, -1, 0, 0, 0, 0, 0])
                 else:
                     self.handle(chess_coordinate)
 
@@ -336,6 +342,8 @@ class Chessin5dUI:
             return 'not_move'
         if xy[0] > 1100 and xy[0] < 1150 and xy[1] > 20 and xy[1] < 60:
             return 'recall'
+        if xy[0] > 900 and xy[0] < 1020 and xy[1] > 20 and xy[1] < 80:
+            return 'stalemate'
 
         board_x = divmod(xy[0] - self.startxy[0], 250)
         board_y = divmod(xy[1] - self.startxy[1], 250)

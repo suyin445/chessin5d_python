@@ -324,7 +324,7 @@ class State:
             if chess_coordinate[2] - self.boardsize + 2 + (self.boardsize - 3) * owner == 0: # 升变
                 promotion = True
 
-            elif chess_coordinate[1] > 1 and chess_coordinate[2] - 4 * owner + 2 in self.pawnline: #吃过路兵 有bug!
+            elif chess_coordinate[1] > 1 and chess_coordinate[2] - 4 * owner + 2 in self.pawnline: #吃过路兵
                 checkp = []
                 for i in range(4):
                     checkp.append(copy.deepcopy(chess_coordinate))
@@ -459,6 +459,13 @@ class State:
         if self.end:
             return False
         if action[1] < 0:
+            if action[2] < 0:
+                self.end = True
+                if self.stalemate(self.turn):
+                    self.winner = 1
+                else:
+                    self.winner = self.winner = 3 - self.turn
+                return True
             if self.end_turn:
                 self.turn = 1 - self.turn
                 self.reset_aftermove()
@@ -589,6 +596,172 @@ class State:
                     return True
         print('该输入棋盘空')
         return False
+
+    def stalemate(self, owner):
+        movable = self.get_all_movable(owner)
+        moves = []
+        if movable is not None:
+            for chess in movable:
+                self.search_all_available(chess)
+
+            for chess in self.available_actions_dic:
+                for next_ in self.available_actions_dic[chess]:
+                    moves.append([*chess, *next_])
+
+        if moves != []:
+            for move in moves:
+                new_board = copy.deepcopy(self)
+                new_board.onemove(move)
+                if new_board.turn == owner:
+                    return False
+                if not new_board.incheck(owner):
+                    return False
+            return True
+        else:
+            self.pass_()
+            if self.incheck(owner):
+                return False
+            return True
+
+    def get_all_movable(self, owner):
+        movable_chess = []
+        for axis1 in self.state:
+            state = self.state[axis1]
+            lentime = len(state) - 1
+            if lentime % 2 == owner:
+                state = state[lentime]
+                for x in range(8):
+                    for y in range(8):
+                        if (state[x][y] - 1) // 6 == owner:
+                            movable_chess.append([axis1, lentime, x, y])
+        if movable_chess == []:
+            movable_chess = None
+        return movable_chess
+
+    def pass_(self):
+        for timeline in self.state:
+            if len(self.state[timeline]) == self.present - 1:
+                self.state[timeline].append(self.state[timeline][-1])
+
+    def incheck(self, owner):
+        check_owner = 1 - owner
+        movable = self.get_all_movable(check_owner)
+        for chess in movable:
+            if self.incheck_search(chess):
+                return True
+        return False
+
+    def incheck_search(self, chess_coordinate):
+        query = self.basic_chess_available(chess_coordinate)
+        chess = query[1]
+        owner,chesstype =  divmod(chess-1,6)
+
+        if chesstype == 0: #王 king
+            axis = axis_choose([1,2,3,4])
+            for move in axis:
+                query = chess_coordinate[:]
+                query = movefuc(query, move)
+                result = self.basic_next_available(query, owner)
+                if result[0]:
+                    if result[1] == 7 - 6 * owner:
+                        return True
+
+        elif chesstype == 1: #后 queen
+            axis = axis_choose([1, 2, 3, 4])
+            for distance in range(self.maxdistance):
+                distance += 1
+                direction_to_del = []
+                if len(axis):
+                    for direction in axis:
+                        query = chess_coordinate[:]
+                        move = [distance * i for i in direction]
+                        query = movefuc(query, move)
+                        criterion = self.basic_next_available(query, owner)
+                        if criterion[0]:
+                            if criterion[1] != 0:
+                                if criterion[1] == 7 - 6 * owner:
+                                        return True
+                                direction_to_del.append(direction)
+                        else:
+                            direction_to_del.append(direction)
+                    for i in direction_to_del:
+                        axis.remove(i)
+
+        elif chesstype == 2: #车 rook
+            for direction in [[0,0,1,0],[0,0,-1,0],[0,0,0,1],[0,0,0,-1],[0,-1,0,0],[-1,0,0,0],[1,0,0,0]]:
+                for distance in range(self.maxdistance):
+                    distance += 1
+                    move = [distance * i for i in direction]
+                    query = chess_coordinate[:]
+                    query = movefuc(query,move)
+                    criterion = self.basic_next_available(query, owner)
+                    if criterion[0]:
+                        if criterion[1] != 0:
+                            if criterion[1] == 7 - 6 * owner:
+                                return True
+                            break
+                    else:
+                        break
+
+        elif chesstype == 3: #马 knight
+            for i in range(4):
+                x = list(range(4))
+                x.remove(i)
+                for j in x:
+                    for k in [[-1,-1],[-1,1],[1,-1],[1,1]]:
+                        query = chess_coordinate[:]
+                        move = [0,0,0,0]
+                        move[i] = 2*k[0]
+                        move[j] = k[1]
+                        query = movefuc(query,move)
+                        result = self.basic_next_available(query, owner)
+                        if result[0]:
+                            if result[1] == 7 - 6 * owner:
+                                return True
+
+        elif chesstype == 4: #象 bishop
+            axis = axis_choose([2])
+            for direction in axis:
+                for distance in range(self.maxdistance):
+                    distance += 1
+                    move = [distance * i for i in direction]
+                    query = chess_coordinate[:]
+                    query = movefuc(query,move)
+                    criterion = self.basic_next_available(query, owner)
+                    if criterion[0]:
+                        if criterion[1] != 0:
+                            if criterion[1] == 7 - 6 * owner:
+                                return True
+                            break
+                    else:
+                        break
+
+        elif chesstype == 5: # 兵 pawn
+            # 普通走法
+            # 2d情况
+            coordinate = []
+            for i in range(2):
+                coordinate.append(chess_coordinate[:])
+                coordinate[i][2] += 1 - 2 * owner
+                coordinate[i][3] += 2 * i - 1
+                temp1 = self.basic_next_available(coordinate[i], owner)
+                if temp1[0]:
+                    if temp1[1] == 7 - 6 * owner:
+                        return True
+
+            #5d情况
+            coordinate = []
+            for i in range(2):
+                coordinate.append(chess_coordinate[:])
+                coordinate[i][0] += 2 * owner - 1
+                coordinate[i][1] += 2 * i - 1
+                temp1 = self.basic_next_available(coordinate[i], owner)
+                if temp1[0]:
+                    if temp1[1] == 7 - 6 * owner:
+                        return True
+        return False
+
+
 
 def movefuc(chess,move):
     next_ = chess[:]
