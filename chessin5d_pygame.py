@@ -18,6 +18,8 @@ for i in IMAGE:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
     elif i.find('recall') != -1:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (50, 40))
+    elif i == 'background':
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (1300, 800))
     else:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (25, 25))
 
@@ -31,7 +33,7 @@ class Chessin5dUI:
         self.image = image
         self.window = pygame.display.set_mode(self.window_size)
         self.chessin5d = chessin5d.State()
-        self.startxy = (25, 100)
+        self.startxy = (25, 90)
         self.boardlist = {}
         self.position = [0,1]
         self.chosen = None
@@ -42,11 +44,12 @@ class Chessin5dUI:
         self.diy_chosen = None
         self.notmove = False
         self.history = []
+        self.font = pygame.font.SysFont('FangSong', 20, bold= True)
         pygame.display.set_caption('老抽冷筱华')
         pygame.display.set_icon(self.image['lxh'])
 
     def draw_window(self):
-        self.window.fill((246,173,198))
+        self.window.blit(self.image['background'], (0, 0))
 
         if self.history:
             self.window.blit(self.image['can_recall'], (1100, 20))
@@ -74,6 +77,13 @@ class Chessin5dUI:
 
         for i in self.boardlist:
             self.boardlist[i].show()
+
+        for x in range(5):
+            text = self.font.render(str(self.position[0] + x), True, (243, 243, 0), None)
+            self.window.blit(text, (120 + 250 * x, 310))
+        for y in range(3):
+            text = self.font.render(str(self.position[1] - y), True, (243, 243, 0), None)
+            self.window.blit(text, (8, 179 + 250 * y))
         pygame.display.update()
 
     def run(self):
@@ -141,9 +151,11 @@ class Chessin5dUI:
 
         pygame.quit()
 
-    def board_set(self, coordinate, board, xy, chosen_chess, available, not_move, board_available):
+    def board_set(self, coordinate, board, xy, chosen_chess, available, not_move, board_available, now_position):
         if board != None:
-            self.boardlist[coordinate] = Chessboard(self.window, board, pygame.Rect(xy[0],xy[1],200,200), self.image, chosen_chess, available, board_available, not_move)
+            self.boardlist[coordinate] = Chessboard(
+                self.window, board, pygame.Rect(xy[0],xy[1],200,200), self.image,
+                chosen_chess, available, board_available, not_move, now_position)
 
     def show_board(self):
         for x in range(5):
@@ -163,8 +175,8 @@ class Chessin5dUI:
                     if tuple(now_position) in self.available and not self.diy:
                         available = self.available[tuple(now_position)]
                 self.board_set((x,y), self.chessin5d.getboard(*now_position),
-                               (self.startxy[0] + 225 * x, self.startxy[1] + 225 * y),
-                               chosen_chess, available, not_move, board_available)
+                               (self.startxy[0] + 250 * x, self.startxy[1] + 250 * y),
+                               chosen_chess, available, not_move, board_available, now_position)
 
     def mouse(self):
         mouse_botton = pygame.mouse.get_pressed()
@@ -305,8 +317,8 @@ class Chessin5dUI:
         if xy[0] > 1100 and xy[0] < 1150 and xy[1] > 20 and xy[1] < 60:
             return 'recall'
 
-        board_x = divmod(xy[0] - self.startxy[0], 225)
-        board_y = divmod(xy[1] - self.startxy[1], 225)
+        board_x = divmod(xy[0] - self.startxy[0], 250)
+        board_y = divmod(xy[1] - self.startxy[1], 250)
         if board_x[1] >= 200 or board_y[1] >= 200:
             return None
         board_x, chess_x = tuple(board_x)
@@ -345,7 +357,7 @@ class Chessin5dUI:
         self.boardlist = {}
 
 class Chessboard:
-    def __init__(self, window, board_state, position_rect, image, chosen_chess = None, available = None, board_available = 0, not_move = None):
+    def __init__(self, window, board_state, position_rect, image, chosen_chess = None, available = None, board_available = 0, not_move = None, now_position = None):
         self.window = window
         self.board_state = board_state
         self.position_rect = position_rect
@@ -356,6 +368,7 @@ class Chessboard:
         self.available = [] if available is None else available
         self.board_available = board_available
         self.not_move = [] if not_move is None else not_move
+        self.now_position = now_position
         self.chesspng = ['black_king','black_queen','black_rook','black_knight','black_bishop',
          'black_pawn','white_king','white_queen','white_rook','white_knight','white_bishop','white_pawn']
         for i in range(8):
@@ -372,6 +385,11 @@ class Chessboard:
         return self.chesspng[chessid]
 
     def show(self):
+        boardframe_list = ['boardframe_black', 'boardframe_white', 'boardframe_black_not_available',
+                           'boardframe_white_not_available']
+        rect = [i - 3 for i in self.position]
+        self.window.blit(self.image['boardframe_black'], rect)
+        self.window.blit(self.image[boardframe_list[self.board_available]], rect)
         for i in range(8):
             for j in range(8):
                 image, rect = self.board_image[i][j]
@@ -385,12 +403,8 @@ class Chessboard:
                     self.window.blit(self.image['frame_available'], rect)
                 elif [i,j] in self.not_move:
                     self.window.blit(self.image['frame_not_move'], rect)
-                else:
-                    self.window.blit(self.image['frame'], rect)
-        boardframe_list = ['boardframe_black', 'boardframe_white', 'boardframe_black_not_available',
-                           'boardframe_white_not_available']
-        rect = [i - 3 for i in self.position]
-        self.window.blit(self.image[boardframe_list[self.board_available]], rect)
+
+
 
 a = Chessin5dUI(image= IMAGE_RESIZED)
 a.run()
