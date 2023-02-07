@@ -44,12 +44,20 @@ class Chessin5dUI:
         self.diy_chosen = None
         self.notmove = False
         self.history = []
-        self.font = pygame.font.SysFont('FangSong', 20, bold= True)
         pygame.display.set_caption('老抽冷筱华')
         pygame.display.set_icon(self.image['lxh'])
 
     def draw_window(self):
         self.window.blit(self.image['background'], (0, 0))
+        if self.chessin5d.end:
+            font = pygame.font.SysFont('FangSong', 40, bold=True)
+            if self.chessin5d.winner == 2:
+                text = font.render('黑胜', True, (243, 243, 0), None)
+            elif self.chessin5d.winner == 3:
+                text = font.render('白胜', True, (243, 243, 0), None)
+            elif self.chessin5d.winner == 1:
+                text = font.render('平局', True, (243, 243, 0), None)
+            self.window.blit(text, (700, 25))
 
         if self.history:
             self.window.blit(self.image['can_recall'], (1100, 20))
@@ -78,11 +86,12 @@ class Chessin5dUI:
         for i in self.boardlist:
             self.boardlist[i].show()
 
+        font = pygame.font.SysFont('FangSong', 20, bold=True)
         for x in range(5):
-            text = self.font.render(str(self.position[0] + x), True, (243, 243, 0), None)
+            text = font.render(str(self.position[0] + x), True, (243, 243, 0), None)
             self.window.blit(text, (120 + 250 * x, 310))
         for y in range(3):
-            text = self.font.render(str(self.position[1] - y), True, (243, 243, 0), None)
+            text = font.render(str(self.position[1] - y), True, (243, 243, 0), None)
             self.window.blit(text, (8, 179 + 250 * y))
         pygame.display.update()
 

@@ -456,6 +456,8 @@ class State:
         return False
 
     def onemove(self,action):
+        if self.end:
+            return False
         if action[1] < 0:
             if self.end_turn:
                 self.turn = 1 - self.turn
@@ -467,7 +469,7 @@ class State:
         if self.maxround < self.maxdistance:
             self.end = True
             self.winner = 1
-        if self.basic_chess_available(action[4:])[1] == 6 - 6 * self.turn:
+        if self.basic_chess_available(action[4:])[1] == 7 - 6 * self.turn:
             self.end = True
             self.winner = self.turn + 2
         if len(self.state[action[4]]) == action[5]+1: #不开线
