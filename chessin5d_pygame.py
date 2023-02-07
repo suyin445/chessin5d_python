@@ -1,6 +1,7 @@
 import pygame
 import os
 import chessin5d
+import copy
 
 IMAGE = {i[:-4]: pygame.image.load(os.path.join('chesspng', i)) for i in os.listdir('.\chesspng')}
 IMAGE_RESIZED = {}
@@ -15,6 +16,8 @@ for i in IMAGE:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
     elif i.find('not_move_') != -1:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
+    elif i.find('recall') != -1:
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (50, 40))
     else:
         IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (25, 25))
 
@@ -38,11 +41,17 @@ class Chessin5dUI:
         self.board_change = False
         self.diy_chosen = None
         self.notmove = False
+        self.history = []
         pygame.display.set_caption('老抽冷筱华')
         pygame.display.set_icon(self.image['lxh'])
 
     def draw_window(self):
         self.window.fill((246,173,198))
+
+        if self.history:
+            self.window.blit(self.image['can_recall'], (1100, 20))
+        else:
+            self.window.blit(self.image['cannot_recall'], (1100, 20))
 
         if self.diy:
             self.window.blit(self.image['diy_on'], (50, 20))
@@ -82,7 +91,9 @@ class Chessin5dUI:
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE or event.key == pygame.K_f:
                         if self.chessin5d.end_turn and not self.board_change:
+                            self.history.append(copy.deepcopy(self.chessin5d))
                             self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
+
                     elif event.key == pygame.K_w:
                         if self.reverse:
                             self.position[1] -= 1
@@ -121,6 +132,7 @@ class Chessin5dUI:
                 self.chosen = self.diy_chosen[:4] if self.diy_chosen else None
             if self.diy_chosen and chesstype:
                 tmp = self.diy_chosen
+                self.history.append(copy.deepcopy(self.chessin5d))
                 self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = tmp[4] * 6 + chesstype
                 self.diy_chosen = None
                 chesstype = None
@@ -169,14 +181,21 @@ class Chessin5dUI:
                 self.board_change = not self.board_change
             elif chess_coordinate == 'not_move':
                 self.notmove = not self.notmove
+            elif chess_coordinate == 'recall':
+                if self.history:
+                    self.chessin5d = self.history.pop()
+                    self.boardlist = {}
             else:
                 if self.board_change:
                     if mouse_botton[0]: # 增加棋盘
                         if chess_coordinate[0] in self.chessin5d.state:
                             if chess_coordinate[1] == len(self.chessin5d.state[chess_coordinate[0]]):
+                                self.history.append(copy.deepcopy(self.chessin5d))
                                 self.chessin5d.state[chess_coordinate[0]].append(
                                     self.chessin5d.state[chess_coordinate[0]][chess_coordinate[1] - 1])
+
                         else:
+                            self.history.append(copy.deepcopy(self.chessin5d))
                             if chess_coordinate[0] < 0:
                                 self.chessin5d.whiteline += 1
                                 self.chessin5d.state[-self.chessin5d.whiteline] = [None] * (chess_coordinate[1])
@@ -187,11 +206,12 @@ class Chessin5dUI:
                                 self.chessin5d.state[self.chessin5d.blackline] = [None] * (chess_coordinate[1])
                                 self.chessin5d.state[self.chessin5d.blackline].append(
                                     [[0 for i in range(8)] for j in range(8)])
+
                     elif mouse_botton[2]: # 删除棋盘
                         if chess_coordinate[0] in self.chessin5d.state:
                             if chess_coordinate[1] == len(self.chessin5d.state[chess_coordinate[0]]) - 1:
-
                                 def popline(chessin5d,line):
+                                    self.history.append(copy.deepcopy(self.chessin5d))
                                     chessin5d.state.pop(line)
                                     if line < 0:
                                         chessin5d.whiteline -= 1
@@ -200,32 +220,40 @@ class Chessin5dUI:
                                         chessin5d.blackline -= 1
                                         print(chessin5d.blackline)
 
+
                                 if chess_coordinate[1] == 0:
                                     if chess_coordinate[0] != 0:
                                         popline(self.chessin5d, chess_coordinate[0])
                                 elif self.chessin5d.state[chess_coordinate[0]][chess_coordinate[1] - 1] is None:
                                     popline(self.chessin5d, chess_coordinate[0])
                                 else:
+                                    self.history.append(copy.deepcopy(self.chessin5d))
                                     self.chessin5d.state[chess_coordinate[0]].pop()
-                    return True
+
                 else:
                     board = self.chessin5d.getboard(*chess_coordinate[:2])
                     if self.notmove:
                         if mouse_botton[2]:
                             if tuple(chess_coordinate[:2]) in self.chessin5d.not_moved:
                                 if chess_coordinate[2:] in self.chessin5d.not_moved[tuple(chess_coordinate[:2])]:
+                                    self.history.append(copy.deepcopy(self.chessin5d))
                                     if len(self.chessin5d.not_moved[tuple(chess_coordinate[:2])]) == 1:
                                         self.chessin5d.not_moved.pop(tuple(chess_coordinate[:2]))
                                     else:
                                         self.chessin5d.not_moved[tuple(chess_coordinate[:2])].remove(chess_coordinate[2:])
+
                         elif mouse_botton[0]:
                             if tuple(chess_coordinate[:2]) in self.chessin5d.not_moved:
                                 if chess_coordinate[2:] not in self.chessin5d.not_moved[tuple(chess_coordinate[:2])]:
+                                    self.history.append(copy.deepcopy(self.chessin5d))
                                     self.chessin5d.not_moved[tuple(chess_coordinate[:2])].append(chess_coordinate[2:])
+
                             else:
                                 if board is not None:
                                     if board[chess_coordinate[2]][chess_coordinate[3]] != 0:
+                                        self.history.append(copy.deepcopy(self.chessin5d))
                                         self.chessin5d.not_moved[tuple(chess_coordinate[:2])] = [chess_coordinate[2:]]
+
                     else:
                         if board is None:
                             self.diy_chosen = None
@@ -247,13 +275,21 @@ class Chessin5dUI:
                         self.unchoose()
                 elif chess_coordinate == 'over':
                     if self.chessin5d.end_turn:
+                        self.history.append(copy.deepcopy(self.chessin5d))
                         self.chessin5d.onemove([0, -1, 0, 0, 0, 0, 0, 0])
+
                 elif chess_coordinate == 'diy':
                     self.diy = True
+                    self.history = []
+
                 elif chess_coordinate == 'not_move':
                     self.notmove = not self.notmove
                 elif chess_coordinate == 'board_change':
                     return False
+                elif chess_coordinate == 'recall':
+                    if self.history:
+                        self.chessin5d = self.history.pop()
+                        self.boardlist = {}
                 else:
                     self.handle(chess_coordinate)
 
@@ -266,6 +302,8 @@ class Chessin5dUI:
             return 'board_change'
         if xy[0] > 1200 and xy[0] < 1290 and xy[1] > 20 and xy[1] < 60:
             return 'not_move'
+        if xy[0] > 1100 and xy[0] < 1150 and xy[1] > 20 and xy[1] < 60:
+            return 'recall'
 
         board_x = divmod(xy[0] - self.startxy[0], 225)
         board_y = divmod(xy[1] - self.startxy[1], 225)
@@ -284,7 +322,9 @@ class Chessin5dUI:
         else:
             if tuple(chess_coordinate[:2]) in self.available:
                 if chess_coordinate[2:] in self.available[tuple(chess_coordinate[:2])]:
-                    self.chessin5d.onemove([*self.chosen, *chess_coordinate])
+                    self.history.append(copy.deepcopy(self.chessin5d))
+                    if not self.chessin5d.onemove([*self.chosen, *chess_coordinate]):
+                        self.history.pop()
                     self.unchoose()
 
     def choose(self):
