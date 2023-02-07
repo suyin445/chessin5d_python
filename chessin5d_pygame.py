@@ -214,6 +214,8 @@ class Chessin5dUI:
                 if self.history:
                     self.chessin5d = self.history.pop()
                     self.boardlist = {}
+            elif chess_coordinate is None:
+                return False
             else:
                 if self.board_change:
                     if mouse_botton[0]: # 增加棋盘
