@@ -162,10 +162,16 @@ class Chessin5dUI:
                 self.history.append(copy.deepcopy(self.chessin5d))
                 if chesstype == 0:
                     self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = 0
+
                 else:
                     self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = tmp[4] * 6 + chesstype
                 self.diy_chosen = None
-                chesstype = None
+                if tuple(tmp[:2]) in self.chessin5d.not_moved:
+                    if tmp[2:4] in self.chessin5d.not_moved[tuple(tmp[:2])]:
+                        if len(self.chessin5d.not_moved[tuple(tmp[:2])]) == 1:
+                            self.chessin5d.not_moved.pop(tuple(tmp[:2]))
+                        else:
+                            self.chessin5d.not_moved[tuple(tmp[:2])].remove(tmp[2:4])
             self.show_board()
             self.draw_window()
 
