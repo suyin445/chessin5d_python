@@ -124,6 +124,8 @@ class Chessin5dUI:
                             self.position[0] -= 1
                         else:
                             self.position[0] += 1
+                    elif event.key == pygame.K_0:
+                        chesstype = 0
                     elif event.key == pygame.K_1:
                         chesstype = 1
                     elif event.key == pygame.K_2:
@@ -140,10 +142,13 @@ class Chessin5dUI:
 
             if self.diy:
                 self.chosen = self.diy_chosen[:4] if self.diy_chosen else None
-            if self.diy_chosen and chesstype:
+            if self.diy_chosen and chesstype is not None:
                 tmp = self.diy_chosen
                 self.history.append(copy.deepcopy(self.chessin5d))
-                self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = tmp[4] * 6 + chesstype
+                if chesstype == 0:
+                    self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = 0
+                else:
+                    self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = tmp[4] * 6 + chesstype
                 self.diy_chosen = None
                 chesstype = None
             self.show_board()
