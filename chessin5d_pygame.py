@@ -2,39 +2,25 @@ import pygame
 import os
 import chessin5d
 
-IMAGE = {'black_king': pygame.image.load(os.path.join('chesspng', 'lxh_yiheihua.png')),
-         'black_queen': pygame.image.load(os.path.join('chesspng', 'blackqueen.png')),
-         'black_rook': pygame.image.load(os.path.join('chesspng', 'blackrook.png')),
-         'black_knight': pygame.image.load(os.path.join('chesspng', 'blackknight.png')),
-         'black_bishop': pygame.image.load(os.path.join('chesspng', 'blackbishop.png')),
-         'black_pawn': pygame.image.load(os.path.join('chesspng', 'blackpawn.png')),
-         'white_king': pygame.image.load(os.path.join('chesspng', 'lxh.png')),
-         'white_queen': pygame.image.load(os.path.join('chesspng', 'whitequeen.png')),
-         'white_rook': pygame.image.load(os.path.join('chesspng', 'whiterook.png')),
-         'white_knight': pygame.image.load(os.path.join('chesspng', 'whiteknight.png')),
-         'white_bishop': pygame.image.load(os.path.join('chesspng', 'whitebishop.png')),
-         'white_pawn': pygame.image.load(os.path.join('chesspng', 'whitepawn.png')),
-         'frame': pygame.image.load(os.path.join('chesspng', 'frame.png')),
-         'frame_chosen': pygame.image.load(os.path.join('chesspng', 'frame_chosen.png')),
-         'frame_available': pygame.image.load(os.path.join('chesspng', 'frame_available.png')),
-         'boardframe_black': pygame.image.load(os.path.join('chesspng', 'boardframe_black.png')),
-         'boardframe_white': pygame.image.load(os.path.join('chesspng', 'boardframe_white.png')),
-         'boardframe_black_not_available': pygame.image.load(os.path.join('chesspng', 'boardframe_black_not_available.png')),
-         'boardframe_white_not_available': pygame.image.load(os.path.join('chesspng', 'boardframe_white_not_available.png')),
-         'can_over': pygame.image.load(os.path.join('chesspng', 'can_over.png')),
-         'cannot_over': pygame.image.load(os.path.join('chesspng', 'cannot_over.png'))}
-IMAGE_SMALL = {}
+IMAGE = {i[:-4]: pygame.image.load(os.path.join('chesspng', i)) for i in os.listdir('.\chesspng')}
+IMAGE_RESIZED = {}
 for i in IMAGE:
-    if i.find('board') != -1:
-        IMAGE_SMALL[i] = pygame.transform.scale(IMAGE[i], (205, 205))
+    if i.find('boardf') != -1:
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (205, 205))
     elif i.find('over') != -1:
-        IMAGE_SMALL[i] = pygame.transform.scale(IMAGE[i], (120, 60))
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (120, 60))
+    elif i.find('diy') != -1:
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
+    elif i.find('change') != -1:
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
+    elif i.find('not_move_') != -1:
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (90, 40))
     else:
-        IMAGE_SMALL[i] = pygame.transform.scale(IMAGE[i], (25, 25))
+        IMAGE_RESIZED[i] = pygame.transform.scale(IMAGE[i], (25, 25))
 
 pygame.init()
 
-class Chessin5d:
+class Chessin5dUI:
     def __init__(self, image, window_size = None):
         if window_size is None:
             window_size = (1300, 800)
@@ -48,14 +34,35 @@ class Chessin5d:
         self.chosen = None
         self.available = {}
         self.reverse = False
-        pygame.display.set_caption('冷筱华，我真的好喜欢你啊！为了你，我要写5dc AI！')
+        self.diy = False
+        self.board_change = False
+        self.diy_chosen = None
+        self.notmove = False
+        pygame.display.set_caption('老抽冷筱华')
+        pygame.display.set_icon(self.image['lxh'])
 
     def draw_window(self):
         self.window.fill((246,173,198))
+
+        if self.diy:
+            self.window.blit(self.image['diy_on'], (50, 20))
+            if self.board_change:
+                self.window.blit(self.image['board_change_on'], (150, 20))
+            else:
+                self.window.blit(self.image['board_change_off'], (150, 20))
+        else:
+            self.window.blit(self.image['diy_off'], (50, 20))
+
         if self.chessin5d.end_turn:
             self.window.blit(self.image['can_over'], (550, 20))
         else:
             self.window.blit(self.image['cannot_over'], (550, 20))
+
+        if self.notmove:
+            self.window.blit(self.image['not_move_on'], (1200, 20))
+        else:
+            self.window.blit(self.image['not_move_off'], (1200, 20))
+
         for i in self.boardlist:
             self.boardlist[i].show()
         pygame.display.update()
@@ -66,6 +73,7 @@ class Chessin5d:
 
         while run:
             clock.tick(60)
+            chesstype = None
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     run = False
@@ -73,7 +81,7 @@ class Chessin5d:
                     self.mouse()
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_SPACE or event.key == pygame.K_f:
-                        if self.chessin5d.end_turn:
+                        if self.chessin5d.end_turn and not self.board_change:
                             self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
                     elif event.key == pygame.K_w:
                         if self.reverse:
@@ -95,23 +103,44 @@ class Chessin5d:
                             self.position[0] -= 1
                         else:
                             self.position[0] += 1
+                    elif event.key == pygame.K_1:
+                        chesstype = 1
+                    elif event.key == pygame.K_2:
+                        chesstype = 2
+                    elif event.key == pygame.K_3:
+                        chesstype = 3
+                    elif event.key == pygame.K_4:
+                        chesstype = 4
+                    elif event.key == pygame.K_5:
+                        chesstype = 5
+                    elif event.key == pygame.K_6:
+                        chesstype = 6
                     self.boardlist = {}
 
+            if self.diy:
+                self.chosen = self.diy_chosen[:4] if self.diy_chosen else None
+            if self.diy_chosen and chesstype:
+                tmp = self.diy_chosen
+                self.chessin5d.state[tmp[0]][tmp[1]][tmp[2]][tmp[3]] = tmp[4] * 6 + chesstype
+                self.diy_chosen = None
+                chesstype = None
             self.show_board()
             self.draw_window()
 
         pygame.quit()
 
-    def board_set(self, coordinate, board, xy, chosen_chess, available, board_available):
+    def board_set(self, coordinate, board, xy, chosen_chess, available, not_move, board_available):
         if board != None:
-            self.boardlist[coordinate] = Chessboard(self.window, board, pygame.Rect(xy[0],xy[1],200,200), self.image, chosen_chess, available, board_available)
+            self.boardlist[coordinate] = Chessboard(self.window, board, pygame.Rect(xy[0],xy[1],200,200), self.image, chosen_chess, available, board_available, not_move)
 
     def show_board(self):
         for x in range(5):
             for y in range(3):
-                chosen_chess, available = None, None
+                chosen_chess, available, not_move = None, None, None
                 now_position = [self.position[1] - y, self.position[0] + x]
                 board_available = 0
+                if tuple(now_position) in self.chessin5d.not_moved and self.notmove:
+                    not_move = self.chessin5d.not_moved[tuple(now_position)]
                 if now_position[0] not in self.chessin5d.available_timeline:
                     board_available += 2
                 if divmod(now_position[1], 2)[1] == 1:
@@ -119,31 +148,125 @@ class Chessin5d:
                 if self.chosen is not None:
                     if now_position == self.chosen[:2]:
                         chosen_chess = self.chosen[2:]
-                    if tuple(now_position) in self.available:
+                    if tuple(now_position) in self.available and not self.diy:
                         available = self.available[tuple(now_position)]
                 self.board_set((x,y), self.chessin5d.getboard(*now_position),
                                (self.startxy[0] + 225 * x, self.startxy[1] + 225 * y),
-                               chosen_chess, available, board_available)
+                               chosen_chess, available, not_move, board_available)
 
     def mouse(self):
         mouse_botton = pygame.mouse.get_pressed()
-        if mouse_botton[2]:
-            if self.chosen is not None:
-                self.unchoose()
-        if mouse_botton[0]:
+        if self.diy:
+            self.boardlist = {}
             chess_coordinate = self.getchess(pygame.mouse.get_pos())
-            if chess_coordinate is None:
+            if chess_coordinate == 'diy':
+                self.chessin5d.reset_aftermove()
+                self.diy = False
+                self.board_change = False
+                self.diy_chosen = None
+                self.chosen = None
+            elif chess_coordinate == 'board_change':
+                self.board_change = not self.board_change
+            elif chess_coordinate == 'not_move':
+                self.notmove = not self.notmove
+            else:
+                if self.board_change:
+                    if mouse_botton[0]: # 增加棋盘
+                        if chess_coordinate[0] in self.chessin5d.state:
+                            if chess_coordinate[1] == len(self.chessin5d.state[chess_coordinate[0]]):
+                                self.chessin5d.state[chess_coordinate[0]].append(
+                                    self.chessin5d.state[chess_coordinate[0]][chess_coordinate[1] - 1])
+                        else:
+                            if chess_coordinate[0] < 0:
+                                self.chessin5d.whiteline += 1
+                                self.chessin5d.state[-self.chessin5d.whiteline] = [None] * (chess_coordinate[1])
+                                self.chessin5d.state[-self.chessin5d.whiteline].append(
+                                    [[0 for i in range(8)] for j in range(8)])
+                            else:
+                                self.chessin5d.blackline += 1
+                                self.chessin5d.state[self.chessin5d.blackline] = [None] * (chess_coordinate[1])
+                                self.chessin5d.state[self.chessin5d.blackline].append(
+                                    [[0 for i in range(8)] for j in range(8)])
+                    elif mouse_botton[2]: # 删除棋盘
+                        if chess_coordinate[0] in self.chessin5d.state:
+                            if chess_coordinate[1] == len(self.chessin5d.state[chess_coordinate[0]]) - 1:
+
+                                def popline(chessin5d,line):
+                                    chessin5d.state.pop(line)
+                                    if line < 0:
+                                        chessin5d.whiteline -= 1
+                                        print(chessin5d.whiteline)
+                                    else:
+                                        chessin5d.blackline -= 1
+                                        print(chessin5d.blackline)
+
+                                if chess_coordinate[1] == 0:
+                                    if chess_coordinate[0] != 0:
+                                        popline(self.chessin5d, chess_coordinate[0])
+                                elif self.chessin5d.state[chess_coordinate[0]][chess_coordinate[1] - 1] is None:
+                                    popline(self.chessin5d, chess_coordinate[0])
+                                else:
+                                    self.chessin5d.state[chess_coordinate[0]].pop()
+                    return True
+                else:
+                    board = self.chessin5d.getboard(*chess_coordinate[:2])
+                    if self.notmove:
+                        if mouse_botton[2]:
+                            if tuple(chess_coordinate[:2]) in self.chessin5d.not_moved:
+                                if chess_coordinate[2:] in self.chessin5d.not_moved[tuple(chess_coordinate[:2])]:
+                                    if len(self.chessin5d.not_moved[tuple(chess_coordinate[:2])]) == 1:
+                                        self.chessin5d.not_moved.pop(tuple(chess_coordinate[:2]))
+                                    else:
+                                        self.chessin5d.not_moved[tuple(chess_coordinate[:2])].remove(chess_coordinate[2:])
+                        elif mouse_botton[0]:
+                            if tuple(chess_coordinate[:2]) in self.chessin5d.not_moved:
+                                if chess_coordinate[2:] not in self.chessin5d.not_moved[tuple(chess_coordinate[:2])]:
+                                    self.chessin5d.not_moved[tuple(chess_coordinate[:2])].append(chess_coordinate[2:])
+                            else:
+                                if board is not None:
+                                    if board[chess_coordinate[2]][chess_coordinate[3]] != 0:
+                                        self.chessin5d.not_moved[tuple(chess_coordinate[:2])] = [chess_coordinate[2:]]
+                    else:
+                        if board is None:
+                            self.diy_chosen = None
+                            return False
+                        if mouse_botton[2]: # 白棋
+                            self.diy_chosen = chess_coordinate
+                            self.diy_chosen.append(1)
+                        elif mouse_botton[0]: # 黑棋
+                            self.diy_chosen = chess_coordinate
+                            self.diy_chosen.append(0)
+        else:
+            if mouse_botton[2]:
                 if self.chosen is not None:
                     self.unchoose()
-            elif chess_coordinate == 'over':
-                if self.chessin5d.end_turn:
-                    self.chessin5d.onemove([0, -1, 0, 0, 0, 0, 0, 0])
-            else:
-                self.handle(chess_coordinate)
+            if mouse_botton[0]:
+                chess_coordinate = self.getchess(pygame.mouse.get_pos())
+                if chess_coordinate is None:
+                    if self.chosen is not None:
+                        self.unchoose()
+                elif chess_coordinate == 'over':
+                    if self.chessin5d.end_turn:
+                        self.chessin5d.onemove([0, -1, 0, 0, 0, 0, 0, 0])
+                elif chess_coordinate == 'diy':
+                    self.diy = True
+                elif chess_coordinate == 'not_move':
+                    self.notmove = not self.notmove
+                elif chess_coordinate == 'board_change':
+                    return False
+                else:
+                    self.handle(chess_coordinate)
 
     def getchess(self, xy):
+        if xy[0] > 50 and xy[0] < 140 and xy[1] > 20 and xy[1] < 60:
+            return 'diy'
         if xy[0] > 550 and xy[0] < 670 and xy[1] > 20 and xy[1] < 80:
             return 'over'
+        if xy[0] > 150 and xy[0] < 240 and xy[1] > 20 and xy[1] < 60:
+            return 'board_change'
+        if xy[0] > 1200 and xy[0] < 1290 and xy[1] > 20 and xy[1] < 60:
+            return 'not_move'
+
         board_x = divmod(xy[0] - self.startxy[0], 225)
         board_y = divmod(xy[1] - self.startxy[1], 225)
         if board_x[1] >= 200 or board_y[1] >= 200:
@@ -182,7 +305,7 @@ class Chessin5d:
         self.boardlist = {}
 
 class Chessboard:
-    def __init__(self, window, board_state, position_rect, image, chosen_chess = None, available = None, board_available = 0):
+    def __init__(self, window, board_state, position_rect, image, chosen_chess = None, available = None, board_available = 0, not_move = None):
         self.window = window
         self.board_state = board_state
         self.position_rect = position_rect
@@ -191,8 +314,10 @@ class Chessboard:
         self.board_image = []
         self.image = image
         self.available = [] if available is None else available
-        self.debug = None
         self.board_available = board_available
+        self.not_move = [] if not_move is None else not_move
+        self.chesspng = ['black_king','black_queen','black_rook','black_knight','black_bishop',
+         'black_pawn','white_king','white_queen','white_rook','white_knight','white_bishop','white_pawn']
         for i in range(8):
             temp1 = []
             for j in range(8):
@@ -204,8 +329,7 @@ class Chessboard:
         if chessid == 0:
             return 'blank'
         chessid -= 1
-        chesslist = list(self.image.keys())
-        return chesslist[chessid]
+        return self.chesspng[chessid]
 
     def show(self):
         for i in range(8):
@@ -219,6 +343,8 @@ class Chessboard:
                     self.window.blit(self.image['frame_chosen'], rect)
                 elif [i,j] in self.available:
                     self.window.blit(self.image['frame_available'], rect)
+                elif [i,j] in self.not_move:
+                    self.window.blit(self.image['frame_not_move'], rect)
                 else:
                     self.window.blit(self.image['frame'], rect)
         boardframe_list = ['boardframe_black', 'boardframe_white', 'boardframe_black_not_available',
@@ -226,5 +352,5 @@ class Chessboard:
         rect = [i - 3 for i in self.position]
         self.window.blit(self.image[boardframe_list[self.board_available]], rect)
 
-a = Chessin5d(image= IMAGE_SMALL)
+a = Chessin5dUI(image= IMAGE_RESIZED)
 a.run()

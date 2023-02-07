@@ -14,6 +14,7 @@ default_notmove = [[0,0], [0,4], [0,7], [7,0], [7,4], [7,7],
 class State:
     def __init__(self, rule = 'Turn Zero', turn = 1, maxround = 1000):
         self.boardsize = 0
+        self.pawnline = []
         self.state = []
         self.history = []
         self.available_actions_dic = {}
@@ -31,6 +32,7 @@ class State:
         self.maxround = maxround
 
         if rule == 'Turn Zero':
+            self.pawnline = [1,6]
             self.boardsize = 8
             self.present = 1
             self.state = {0: [copy.deepcopy(default_chessboard), copy.deepcopy(default_chessboard)]}
@@ -322,7 +324,7 @@ class State:
             if chess_coordinate[2] - self.boardsize + 2 + (self.boardsize - 3) * owner == 0: # 升变
                 promotion = True
 
-            elif chess_coordinate[1] > 1: #吃过路兵
+            elif chess_coordinate[1] > 1 and chess_coordinate[2] - 4 * owner + 2 in self.pawnline: #吃过路兵 有bug!
                 checkp = []
                 for i in range(4):
                     checkp.append(copy.deepcopy(chess_coordinate))
@@ -545,6 +547,14 @@ class State:
             board[1] += 1
             self.notmove_update(action[:2], board, [[action[2], action[3]]])
         self.reset_aftermove()
+        tmp = True
+        for i in self.state.values():
+            if len(i) % 2 != self.turn:
+                tmp = False
+                break
+        if tmp:
+            self.turn = 1 - self.turn
+            self.reset_aftermove()
         return True
 
     def getboard(self,timeline = 0,time = 0):
