@@ -2,6 +2,10 @@ import pygame
 import os
 import chessin5d
 import copy
+import sys
+
+sys.path.append(r'D:\Project\AI\SuZero')
+import analyzer
 
 IMAGE = {i[:-4]: pygame.image.load(os.path.join('chesspng', i)) for i in os.listdir('.\chesspng')}
 IMAGE_RESIZED = {}
@@ -46,8 +50,14 @@ class Chessin5dUI:
         self.diy_chosen = None
         self.notmove = False
         self.history = []
+        self.suzero_use = False
         pygame.display.set_caption('老抽冷筱华')
         pygame.display.set_icon(self.image['lxh'])
+        if self.suzero_use:
+            self.suzero = analyzer.Analyzer()
+            result = self.suzero.start_analyze(5)
+            for each in result:
+                print(each[0], ':', each[1])
 
     def draw_window(self):
         self.window.blit(self.image['background'], (0, 0))
@@ -117,7 +127,7 @@ class Chessin5dUI:
                         else:
                             if self.chessin5d.end_turn:
                                 self.history.append(copy.deepcopy(self.chessin5d))
-                                self.chessin5d.onemove([0,-1,0,0,0,0,0,0])
+                                self.step([0,-1,0,0,0,0,0,0])
 
                     elif event.key == pygame.K_w:
                         if self.reverse:
@@ -318,7 +328,7 @@ class Chessin5dUI:
                 elif chess_coordinate == 'over':
                     if self.chessin5d.end_turn:
                         self.history.append(copy.deepcopy(self.chessin5d))
-                        self.chessin5d.onemove([0, -1, 0, 0, 0, 0, 0, 0])
+                        self.step([0, -1, 0, 0, 0, 0, 0, 0])
 
                 elif chess_coordinate == 'diy':
                     self.diy = True
@@ -333,7 +343,7 @@ class Chessin5dUI:
                         self.boardlist = {}
                 elif chess_coordinate == 'stalemate':
                     self.history.append(copy.deepcopy(self.chessin5d))
-                    self.chessin5d.onemove([0, -1, -1, 0, 0, 0, 0, 0])
+                    self.step([0, -1, -1, 0, 0, 0, 0, 0])
                 else:
                     self.handle(chess_coordinate)
 
@@ -369,7 +379,7 @@ class Chessin5dUI:
             if tuple(chess_coordinate[:2]) in self.available:
                 if chess_coordinate[2:] in self.available[tuple(chess_coordinate[:2])]:
                     self.history.append(copy.deepcopy(self.chessin5d))
-                    if not self.chessin5d.onemove([*self.chosen, *chess_coordinate]):
+                    if not self.step([*self.chosen, *chess_coordinate]):
                         self.history.pop()
                     self.unchoose()
 
@@ -389,6 +399,15 @@ class Chessin5dUI:
         self.chosen = None
         self.available = {}
         self.boardlist = {}
+
+    def step(self, action):
+        bool_ = self.chessin5d.onemove(action)
+        if self.suzero_use:
+            self.suzero.step(action)
+            result = self.suzero.start_analyze(5)
+            for each in result:
+                print(each[0], ':', each[1])
+        return bool_
 
 class Chessboard:
     def __init__(self, window, board_state, position_rect, image, chosen_chess = None, available = None, board_available = 0, not_move = None, now_position = None):
